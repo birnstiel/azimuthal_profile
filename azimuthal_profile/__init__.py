@@ -4,7 +4,8 @@ from .azimuthal_functions import \
     solve_drift_diffusion_analytical, \
     progress_bar, \
     size_distribution_recipe, \
-    planck_B_nu
+    planck_B_nu, \
+    Capturing
 
 __all__ = [
     'find',
@@ -12,5 +13,6 @@ __all__ = [
     'solve_drift_diffusion_analytical',
     'progress_bar',
     'size_distribution_recipe',
-    'planck_B_nu'
+    'planck_B_nu',
+    'Capturing'
     ]

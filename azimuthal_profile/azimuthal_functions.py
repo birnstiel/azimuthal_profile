@@ -1,8 +1,10 @@
 import numpy as np
 import sys
+from io import StringIO
 
 import astropy.constants as c
 import astropy.units as u
+
 
 sig_h2 = 2e-15
 mu = 2.3
@@ -30,7 +32,7 @@ def make_azim_distri(R, Y, A, T, sig_g_2D, sig_d, alpha, v_frag, rho_s, M_star):
     sig_g_2D = 2D gas surface density map                [g cm^-2]
     sig_d    = either 1d radial grid, then the recipe
                for the coag/frag equilibrium is used
-               or a 2D array (R,A) with a distribution   [g cm^-2]
+               or a 2D array (A,R) with a distribution   [g cm^-2]
     alpha    = turbulence parameter (scalar or array)    [-]
     v_frag   = fragmentation velocity (scalar or arrry)  [cm s^-1]
     rho_s    = dust internal density                     [g cm^-3]
@@ -351,3 +353,44 @@ def planck_B_nu(freq, T):
         return output.to(cgsunit).squeeze()
     else:
         return output.to(cgsunit).value.squeeze()
+
+
+class Capturing(list):
+    """Context manager capturing standard output of whatever is called in it.
+
+    Examples
+    --------
+    >>> with Capturing() as output:
+    >>>     do_something(my_object)
+
+    `output` is now a list containing the lines printed by the function call.
+
+    This can also be concatenated
+
+    >>> with Capturing() as output:
+    >>>    print 'hello world'
+    >>>
+    >>> print('displays on screen')
+    >>>
+    >>> with Capturing(output) as output:
+    >>>     print('hello world2')
+    >>>
+    >>> print('done')
+    >>> print('output:', output)
+    done
+    output: ['hello world', 'hello world2']
+
+    Copied from [this stackoverflow answer](http://stackoverflow.com/a/16571630/2108771)
+
+    """
+
+    def __enter__(self):
+        """Start capturing output when entering the context"""
+        self._stdout = sys.stdout
+        sys.stdout = self._stringio = StringIO()
+        return self
+
+    def __exit__(self, *args):
+        """Get & return the collected output when exiting context"""
+        self.extend(self._stringio.getvalue().splitlines())
+        sys.stdout = self._stdout
