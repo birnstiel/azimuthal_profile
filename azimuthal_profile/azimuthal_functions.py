@@ -97,7 +97,7 @@ def make_azim_distri(R, Y, A, T, sig_g_2D, sig_d, alpha, v_frag, rho_s, M_star):
                 # store it
                 #
                 sig_d_2D[ir, :, ia] = sol
-        progress_bar((100.0 * ir) / float(max(1, nr - 1)), 'Fitting')
+        progress_bar(100 * (ir + (nr == 1)) / max(1, nr - 1), 'Fitting')
     return sig_d_2D
 
 
