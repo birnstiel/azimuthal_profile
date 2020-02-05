@@ -7,4 +7,15 @@ To install it, clone it and then inside the folder call
 
     pip install -e .
 
-Examples are in the [notebooks folder](notebooks/).
+Examples are in the [notebooks folder](notebooks/). The notebook can be
+converted into an executable script like this:
+
+    jupyter nbconvert --to python azimuthal.ipynb
+
+the result can then be run with
+
+    python azimuthal.py
+
+for the help, execute:
+
+    python azimuthal.py -h
