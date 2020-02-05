@@ -5,7 +5,8 @@ from .azimuthal_functions import \
     progress_bar, \
     size_distribution_recipe, \
     planck_B_nu, \
-    Capturing
+    Capturing, \
+    is_interactive
 
 __all__ = [
     'find',
@@ -14,5 +15,6 @@ __all__ = [
     'progress_bar',
     'size_distribution_recipe',
     'planck_B_nu',
-    'Capturing'
+    'Capturing',
+    'is_interactive'
     ]
