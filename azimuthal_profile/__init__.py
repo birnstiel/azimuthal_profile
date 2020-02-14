@@ -7,6 +7,8 @@ from .azimuthal_functions import \
     planck_B_nu, \
     Capturing, \
     is_interactive
+    
+from .azimuthal_widget import Widget
 
 __all__ = [
     'find',
@@ -16,5 +18,6 @@ __all__ = [
     'size_distribution_recipe',
     'planck_B_nu',
     'Capturing',
-    'is_interactive'
+    'is_interactive',
+    'Widget'
     ]
