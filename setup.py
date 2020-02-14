@@ -28,4 +28,5 @@ if __name__ == "__main__":
             'matplotlib',
             'astropy'],
         zip_safe=False,
+        entry_points = {'console_scripts': ['azimuthal_widget=azimuthal_profile.azimuthal_widget:main']}
         )

@@ -421,8 +421,12 @@ class Widget():
                 self.I_nu[1, ...].max(-1) / self.I_nu[1, ...].min(-1),
                 self.a_max
                 )).T, delimiter='\t', fmt='%2.2e')
+
                 
-                
-if __name__ == '__main__':
+def main():
     w = Widget()
     plt.show()
+
+
+if __name__ == '__main__':
+    main()
