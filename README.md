@@ -6,8 +6,12 @@ This module contains the analytic function and some helper functions from the pa
 To install it, clone it and then inside the folder call
 
     pip install -e .
+    
+After installation, it should be possible to call
 
-Examples are in the [notebooks folder](notebooks/). The notebook can be
+	azimuthal_widget
+	
+to get an interactive figure. Further examples are in the [notebooks folder](notebooks/). The notebook can be
 converted into an executable script like this:
 
     jupyter nbconvert --to python azimuthal.ipynb
