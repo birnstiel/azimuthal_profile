@@ -23,6 +23,7 @@ if __name__ == "__main__":
         license='GPLv3',
         packages=[PACKAGENAME],
         package_dir={PACKAGENAME: PACKAGENAME},
+        package_data={PACKAGENAME: ['data/data.txt']},
         install_requires=[
             'numpy',
             'matplotlib',

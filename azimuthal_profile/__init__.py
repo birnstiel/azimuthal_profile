@@ -7,7 +7,7 @@ from .azimuthal_functions import \
     planck_B_nu, \
     Capturing, \
     is_interactive
-    
+
 from .azimuthal_widget import Widget
 
 __all__ = [

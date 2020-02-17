@@ -3,18 +3,19 @@
 
 """Azimuthal Dust Profiles Widget"""
 
+import pkg_resources
+import os
+
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.constants as c
 import astropy.units as u
-import argparse
 
 from scipy.constants import golden as gr
 from scipy.interpolate import interp2d
 
 import matplotlib
 import matplotlib.gridspec as gridspec
-import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
 import azimuthal_profile as az
@@ -25,6 +26,7 @@ matplotlib.rcParams.update({'font.size': 8})
 au = c.au.cgs.value
 c_light = c.c.cgs.value
 jy_as = (1. * u.Jy / u.arcsec).cgs.value
+
 
 class Widget():
 
@@ -59,37 +61,37 @@ class Widget():
 
     # Nienke: temperature has minor influence, so changes due to changes
     # in R is primarily due to sigma_gas, which is scaled with R => change sig_c
-    T       = 500 * np.ones(nr) #* (r / au)**-0.5
-    
+    T = 500 * np.ones(nr)
+
     # initial slider position
-    
+
     ir = nr // 2
-    
+
     # which particle sizes to show
-    
+
     sizes = [1e-4, 1e-2, 1e-1, 1e0]
     i_sizes = []
-    
+
     def __init__(self, lam_obs=np.array([0.13, 0.9])):
-        
+
         # figure setup
-        
+
         self.width = 10
         self.height = self.width / gr * 2 / 3 * 1.5
         self.fig = plt.figure(figsize=(self.width, self.height))
         gs = gridspec.GridSpec(2, 3)
-        
+
         self.ax0 = self.fig.add_subplot(gs[0, 0])
         self.ax1 = self.fig.add_subplot(gs[0, 1])
         self.ax2 = self.fig.add_subplot(gs[0, 2])
         self.ax3 = self.fig.add_subplot(gs[1, 0])
         self.ax4 = self.fig.add_subplot(gs[1, 1])
         self.ax5 = self.fig.add_subplot(gs[1, 2])
-        
-        self.fig.subplots_adjust(left=0.08, wspace=0.4, hspace=0.4, top=0.95, bottom=0.25, right=0.92) 
-        
+
+        self.fig.subplots_adjust(left=0.08, wspace=0.4, hspace=0.4, top=0.95, bottom=0.25, right=0.92)
+
         # OPACITY: Read opacity and interpolate on our grid
-        
+
         self.lam_obs = lam_obs
         self.n_lam = len(lam_obs)
         self.nu_obs  = c_light / lam_obs
@@ -98,126 +100,126 @@ class Widget():
             a_opac   = fid['a']
             lam_opac = fid['lam']
             k_abs    = fid['k_abs']
-            k_sca    = fid['k_sca']
-            g        = fid['g']
-            rho_s    = fid['rho_s']
+            # k_sca    = fid['k_sca']
+            # g        = fid['g']
+            # rho_s    = fid['rho_s']
 
         self.f_kappa = interp2d(np.log10(lam_opac), np.log10(a_opac), np.log10(k_abs))
-        
+
         # calculations and plot initialization
-        
+
         self.calculate_distri()
         self.calculate_intensity()
-        
+
         self.init_plot0()
         self.init_plot1()
         self.init_plot2()
         self.init_plot3()
         self.init_plot4()
         self.init_plot5()
-        
+
         slider_x0 = self.ax0.get_position().x0
         slider_y0 = 0.05
         slider_w  = self.ax0.get_position().width
         slider_h  = 0.04
-        
+
         # radius slider
-        
+
         self._ax_radius = self.fig.add_axes([slider_x0, slider_y0, slider_w, slider_h], facecolor="lightgoldenrodyellow")
         self._slider_radius = Slider(self._ax_radius, "radius", 0, self.nr - 1, valinit=self.ir, valfmt='%i')
         self._ax_radius.set_title("r = {:9.3e} au".format(self.r[self.ir] / au), fontsize='small')
         self._slider_radius.on_changed(self.update_r)
 
         # A_g slider
-        
+
         self._ax_Ag = self.fig.add_axes([slider_x0, slider_y0 + slider_h, slider_w, slider_h], facecolor="lightgoldenrodyellow")
         self._slider_Ag = Slider(self._ax_Ag, "$A_g$", 1, 3, valinit=self.A_gas, valfmt='%.2f')
         self._slider_Ag.on_changed(self.update_all)
 
         # alpha slider
-        
+
         self._ax_alpha = self.fig.add_axes([slider_x0, slider_y0 + 2 * slider_h, slider_w, slider_h], facecolor="lightgoldenrodyellow")
         self._slider_alpha = Slider(self._ax_alpha, "$\\alpha$", -4, -1, valinit=np.log10(self.alpha), valfmt='$10^{%.1f}$')
         self._slider_alpha.on_changed(self.update_all)
 
         # T slider
-        
+
         slider_x0 = self.ax1.get_position().x0
-        
+
         self._ax_T = self.fig.add_axes([slider_x0, slider_y0, slider_w, slider_h], facecolor="lightgoldenrodyellow")
         self._slider_T = Slider(self._ax_T, "$T$", 10, 200, valinit=self.T[self.ir], valfmt='%.0f K')
         self._slider_T.on_changed(self.update_all)
 
         # a0 slider
-        
+
         self._ax_a0 = self.fig.add_axes([slider_x0, slider_y0 + slider_h, slider_w, slider_h], facecolor="lightgoldenrodyellow")
         self._slider_a0 = Slider(self._ax_a0, "$a_0$", -4, 1, valinit=self.a0, valfmt='$10^{%.1f} cm$')
         self._slider_a0.on_changed(self.update_all)
 
         # pa slider
-        
-        self._ax_pa = self.fig.add_axes([slider_x0, slider_y0 + 2* slider_h, slider_w, slider_h], facecolor="lightgoldenrodyellow")
+
+        self._ax_pa = self.fig.add_axes([slider_x0, slider_y0 + 2 * slider_h, slider_w, slider_h], facecolor="lightgoldenrodyellow")
         self._slider_pa = Slider(self._ax_pa, "$p_a$", -4, 1, valinit=self.pa, valfmt='%.1f')
         self._slider_pa.on_changed(self.update_all)
 
         # sigma slider
-        
+
         slider_x0 = self.ax2.get_position().x0
-        
+
         self._ax_sigma = self.fig.add_axes([slider_x0, slider_y0, slider_w, slider_h], facecolor="lightgoldenrodyellow")
-        self._slider_sigma = Slider(self._ax_sigma, "$\Sigma_0$", -1, 4, valinit=self.sig0, valfmt='$10^{%.1f}$')
+        self._slider_sigma = Slider(self._ax_sigma, r"$\Sigma_0$", -1, 4, valinit=np.log10(self.sig0), valfmt='$10^{%.1f}$')
         self._slider_sigma.on_changed(self.update_all)
-        
+
         # d2g slider
-        
+
         self._ax_d2g = self.fig.add_axes([slider_x0, slider_y0 + slider_h, slider_w, slider_h], facecolor="lightgoldenrodyellow")
         self._slider_d2g = Slider(self._ax_d2g, "d2g", -4, 0, valinit=np.log10(self.d2g), valfmt='$10^{%.1f}$')
         self._slider_d2g.on_changed(self.update_all)
-        
+
         # vortex width slider
-        
+
         self._ax_sigydeg = self.fig.add_axes([slider_x0, slider_y0 + 2 * slider_h, slider_w, slider_h], facecolor="lightgoldenrodyellow")
         self._slider_sigydeg = Slider(self._ax_sigydeg, "$\\Delta \\phi$", 5, 180, valinit=self.sigma_y_deg, valfmt='%.1f')
         self._slider_sigydeg.on_changed(self.update_all)
-        
+
     def update_r(self, val):
         ir = int(np.floor(self._slider_radius.val))
-        
+
         if ir != self.ir:
             self.ir = ir
             self._ax_radius.set_title(f'r = {self.r[ir] / au:9.3e} au')
-            
+
             self.update_plot0()
             self.update_plot1()
             self.update_plot2(distri_update=False)
             self.update_plot3()
             self.update_plot4()
             self.update_plot5(distri_update=False)
-            
+
     def update_all(self, val):
-        
+
         self.A_gas = self._slider_Ag.val
-        
+
         self.alpha = 10.**(self._slider_alpha.val)
-        
+
         self.T = self._slider_T.val * np.ones(self.nr)
-        
+
         self.a0 = 10.**self._slider_a0.val
         self.pa = self._slider_pa.val
         self.a_max = self.a0 * (self.r/self.r[0])**self.pa
-        
+
         self.sig0 = 10.**(self._slider_sigma.val)
         self.sig_g = self.sig0 / (self.r / self.r[0])
 
         self.d2g = 10.**(self._slider_d2g.val)
         self.sig_d = self.sig_g * self.d2g
-        
+
         self.sigma_y_deg = self._slider_sigydeg.val
         self.sigma_y     = self.sigma_y_deg / 180 * np.pi
-        
+
         self.calculate_distri()
         self.calculate_intensity()
-        
+
         self.update_plot0()
         self.update_plot1()
         self.update_plot2(distri_update=True)
@@ -225,35 +227,35 @@ class Widget():
         self.update_plot4()
         self.update_plot5(distri_update=True)
         self.update_limits()
-        
+
     def update_limits(self):
-        
+
         self.ax0.set_ylim(self.sig_d_2D[:, :, 0].min(), self.sig_d_2D.max())
         self.ax1.set_ylim(self.I_nu[0, :, :].max() / jy_as * np.array([1e-5, 2]))
         self.ax4.set_ylim(np.array([1e-5, 2]) * self.distri.max())
-        
+
         self.distri.max() * 1e-5, 2 * self.distri.max()
-        
+
     def calculate_distri(self):
         """
         Calculate the 2D gas and dust distributions and the dust size distribution.
         It updates the objects A, sig_g_2D, sig_d_2D
         """
-        
-        ##### SIZE GRID
+
+        # #### SIZE GRID
         # at least to a_max or 10 if a_max is none
-        
+
         if self.a_max is None:
             A = np.logspace(-5, 1, self.na)
         else:
             A = np.logspace(-5, np.log10(np.max(self.a_max)), self.na)
-            
-        ##### GAS AZIMUTHAL PROFILE
+
+        # #### GAS AZIMUTHAL PROFILE
 
         self.sig_g_2D = 1 + (self.A_gas - 1) * np.exp(- self.Y**2 / ((2 * (self.r * self.sigma_y))**2)[:, None])
         self.sig_g_2D *= (self.sig_g / self.sig_g_2D.mean(-1))[:, None]
 
-        ##### DUST SIZE DISTRIBUTION
+        # #### DUST SIZE DISTRIBUTION
 
         if self.a_max is not None:
             print('a_max given -> making MRN size distribution')
@@ -265,12 +267,12 @@ class Widget():
             distri[mask] = 1e-100
             distri *= (self.sig_d / distri.sum(-1))[:, None]
             distri = distri.T
-            
+
         else:
             print('no a_max given -> using equilibrium size distribution')
-            distri = sig_d.copy()
-            
-        ##### DUST AZIMUTHAL PROFILES
+            distri = self.sig_d.copy()
+
+        # #### DUST AZIMUTHAL PROFILES
         self.distri = distri
         self.A = A
         self.sig_d_2D = az.make_azim_distri(
@@ -289,8 +291,8 @@ class Widget():
     def init_plot0(self):
         "Plot the azimuthal density distribution of some grain sizes"
         ir = self.ir
-        
-        self.i_sizes = self.A.searchsorted(np.minimum(self.sizes,self.A[-1]))
+
+        self.i_sizes = self.A.searchsorted(np.minimum(self.sizes, self.A[-1]))
 
         self.lines_0 = []
         self.lines_0 += self.ax0.semilogy(self.y / np.pi * 180, self.sig_g_2D[ir, :] / 100, 'k-', label='gas / 100')
@@ -301,36 +303,33 @@ class Widget():
         self.ax0.set_xlabel('azimuth [degree]')
         self.ax0.set_ylabel(r'$\Sigma_\mathrm{d}$ [g cm$^{-2}$]')
         self.ax0.legend(fontsize='small', loc=1)
-        
+
     def update_plot0(self):
         ir = self.ir
-        self.i_sizes = self.A.searchsorted(np.minimum(self.sizes,self.A[-1]))
-        
+        self.i_sizes = self.A.searchsorted(np.minimum(self.sizes, self.A[-1]))
+
         self.lines_0[0].set_ydata(self.sig_g_2D[ir, :] / 100)
         for i_line, ia in enumerate(self.i_sizes):
             self.lines_0[i_line + 1].set_ydata(self.sig_d_2D[ir, :, ia])
-            
-        # self.ax0.get_legend().get_texts()[i_line + 1].set_text('%.2g cm'.format(self.A[ia]))
-        # self.fig.canvas.draw()
-        
+
     def init_plot1(self):
         "Intensity profile"
         ir = self.ir
         self.lines_1 = []
 
         for ilam in range(self.n_lam):
-            #print(f'Intensity contrast (max/min) at {10 * self.lam_obs[ilam]:3.1f} mm = {self.I_nu[ilam, ir, :].max()/self.I_nu[ilam, ir, :].min():.3g}')
+            # print(f'Intensity contrast (max/min) at {10 * self.lam_obs[ilam]:3.1f} mm = {self.I_nu[ilam, ir, :].max()/self.I_nu[ilam, ir, :].min():.3g}')
             self.lines_1 += self.ax1.semilogy(self.y * 180 / np.pi, self.I_nu[ilam, ir, :] / jy_as, label=f'$\\lambda = {10 * self.lam_obs[ilam]:3.1f}$ mm')
 
         self.ax1.set_xlabel('azimuth [degree]')
         self.ax1.set_ylabel('$I_\\nu$ [Jy/arsec]')
         self.ax1.legend()
-        
+
     def update_plot1(self):
         ir = self.ir
         for ilam in range(self.n_lam):
             self.lines_1[ilam].set_ydata(self.I_nu[ilam, ir, :] / jy_as)
-        
+
     def init_plot2(self):
         """plot the size distribution"""
         vmax = np.log10(2 * self.distri.max())
@@ -341,7 +340,7 @@ class Widget():
         self.ax2.set_title('size distribution')
         self.ax2.set_xlabel('$r$ [au]')
         self.ax2.set_ylabel('paraticle size [cm]')
-        
+
     def update_plot2(self, distri_update=False):
         if distri_update:
             self.cc2.remove()
@@ -349,22 +348,29 @@ class Widget():
             self.cc2 = self.ax2.pcolormesh(self.r / au, self.A, np.log10(self.distri[:-1, :-1]), vmin=vmax - 9, vmax=vmax)
         self.lines_2.set_xdata([self.r[self.ir] / au, self.r[self.ir] / au])
 
-
     def init_plot3(self):
         "Contrast curve"
-        St = self.lam_obs[0] * self.rho_s / (4. * self.sig_g) # the "observed stokes number"
-        
+        St = self.lam_obs[0] * self.rho_s / (4. * self.sig_g)  # the "observed stokes number"
+
+        stokes, err_st_low, err_st_up, A_d, err_A_d = np.loadtxt(
+            pkg_resources.resource_filename(__name__, os.path.join('data', 'data.txt')),
+            skiprows=1, usecols=(1, 2, 3, 4, 5)).T
+
+        err_st = np.array((err_st_low, err_st_up))
+        # self.ax3.scatter(stokes, A_d, color='r')
+        self.ax3.errorbar(stokes, A_d, yerr=err_A_d, xerr=err_st, fmt='.', lw=0.5)
+
         self.lines_3 = self.ax3.loglog(St, self.I_nu[0, :, :].max(-1) / self.I_nu[0, :, :].min(-1))
         self.lines_3 += [self.ax3.axvline(St[self.ir], c='k', ls='--', lw=1)]
-        
+
         self.ax3.set_xlabel('obs. Stokes number')
         self.ax3.set_ylabel('Intensity contrast')
         self.ax3.set_xlim(sorted(self.ax3.get_xlim()))
         self.ax3.set_ylim(1e0, 1e3)
-        
+
     def update_plot3(self):
-        St = self.lam_obs[0] * self.rho_s / (4. * self.sig_g) # the "observed stokes number"
-        
+        St = self.lam_obs[0] * self.rho_s / (4. * self.sig_g)  # the "observed stokes number"
+
         self.lines_3[0].set_data(St, self.I_nu[0, :, :].max(-1) / self.I_nu[0, :, :].min(-1))
         self.lines_3[1].set_xdata([St[self.ir], St[self.ir]])
 
@@ -373,13 +379,14 @@ class Widget():
         ir = self.ir
 
         self.lines_4 = self.ax4.loglog(self.A, self.distri[:, ir])
+        self.ax4.set_xlim(1e-5, 1e1)
         self.ax4.set_ylim(self.distri.max() * 1e-5, 2 * self.distri.max())
         self.ax4.set_xlabel('particle size [cm]')
         self.ax4.set_ylabel(r'$\sigma$ [g cm$^{-2}$]')
-        
+
     def update_plot4(self):
         self.lines_4[0].set_data(self.A, self.distri[:, self.ir])
-        
+
     def init_plot5(self):
         "2D intensity"
         vmax = np.log10(self.I_nu[0, :, :].max())
@@ -394,7 +401,7 @@ class Widget():
         self.ax5.set_title('intensity profile')
         self.ax5.set_xlabel('$r$ [au]')
         self.ax5.set_ylabel('paraticle size [cm]')
-        
+
     def update_plot5(self, distri_update=False):
         if distri_update:
             self.cc5.set_array(np.log10(self.I_nu[0, :-1, :-1]).T.ravel())
@@ -422,9 +429,9 @@ class Widget():
                 self.a_max
                 )).T, delimiter='\t', fmt='%2.2e')
 
-                
+
 def main():
-    w = Widget()
+    _ = Widget()
     plt.show()
 
 
