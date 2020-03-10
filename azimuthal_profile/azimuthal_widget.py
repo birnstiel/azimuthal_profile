@@ -96,7 +96,7 @@ class Widget():
         self.n_lam = len(lam_obs)
         self.nu_obs  = c_light / lam_obs
 
-        with np.load(op.get_datafile('default_opacities_smooth.npz')) as fid:
+        with np.load(op.get_datafile('ricci_compact.npz')) as fid:
             a_opac   = fid['a']
             lam_opac = fid['lam']
             k_abs    = fid['k_abs']
@@ -206,7 +206,11 @@ class Widget():
 
         self.a0 = 10.**self._slider_a0.val
         self.pa = self._slider_pa.val
-        self.a_max = self.a0 * (self.r/self.r[0])**self.pa
+
+        if np.isclose(self.pa, self._slider_pa.valmin):
+            self.a_max = None
+        else:
+            self.a_max = self.a0 * (self.r / self.r[0])**self.pa
 
         self.sig0 = 10.**(self._slider_sigma.val)
         self.sig_g = self.sig0 / (self.r / self.r[0])
@@ -262,10 +266,13 @@ class Widget():
 
             # make an MRN distribution up to a_max
 
-            distri = A[None, :]**0.5 * np.ones([self.nr, 1])
-            mask = A[None, :] > (self.a_max * np.ones_like(self.r))[:, None]
-            distri[mask] = 1e-100
-            distri *= (self.sig_d / distri.sum(-1))[:, None]
+            # distri = A[None, :]**0.5 * np.ones([self.nr, 1])
+            # mask = A[None, :] > (self.a_max * np.ones_like(self.r))[:, None]
+            # distri[mask] = 1e-100
+            # distri *= (self.sig_d / distri.sum(-1))[:, None]
+            # distri = distri.T
+
+            A, _, distri = az.get_powerlaw_dust_distribution(self.sig_d, self.a_max, q=3.5, na=self.na, a0=1e-5, a1=1000)
             distri = distri.T
 
         else:
@@ -287,6 +294,9 @@ class Widget():
             self.rho_s,
             self.M_star,
             )
+
+        if self.a_max is None:
+            self.distri = self.sig_d_2D.mean(1).T
 
     def init_plot0(self):
         "Plot the azimuthal density distribution of some grain sizes"
@@ -337,15 +347,22 @@ class Widget():
         self.lines_2 = self.ax2.axvline(self.r[self.ir] / au, c='k', ls='--', lw=1)
         self.ax2.set_xscale('log')
         self.ax2.set_yscale('log')
-        self.ax2.set_title('size distribution')
+        self.ax2.set_title('size distribution', c='k')
         self.ax2.set_xlabel('$r$ [au]')
         self.ax2.set_ylabel('paraticle size [cm]')
 
     def update_plot2(self, distri_update=False):
         if distri_update:
-            self.cc2.remove()
+            try:
+                self.cc2.remove()
+            except ValueError:
+                pass
             vmax = np.log10(2 * self.distri.max())
             self.cc2 = self.ax2.pcolormesh(self.r / au, self.A, np.log10(self.distri[:-1, :-1]), vmin=vmax - 9, vmax=vmax)
+            if self.a_max is None:
+                self.ax2.set_title('equilibrium size distribution', c='r')
+            else:
+                self.ax2.set_title('size distribution', c='k')
         self.lines_2.set_xdata([self.r[self.ir] / au, self.r[self.ir] / au])
 
     def init_plot3(self):
