@@ -179,7 +179,7 @@ class Widget():
         # vortex width slider
 
         self._ax_sigydeg = self.fig.add_axes([slider_x0, slider_y0 + 2 * slider_h, slider_w, slider_h], facecolor="lightgoldenrodyellow")
-        self._slider_sigydeg = Slider(self._ax_sigydeg, "$\\Delta \\phi$", 5, 180, valinit=self.sigma_y_deg, valfmt='%.1f')
+        self._slider_sigydeg = Slider(self._ax_sigydeg, "$\\Delta \\phi$", 1, 180, valinit=self.sigma_y_deg, valfmt='%.1f')
         self._slider_sigydeg.on_changed(self.update_all)
 
     def update_r(self, val):
@@ -256,7 +256,7 @@ class Widget():
 
         # #### GAS AZIMUTHAL PROFILE
 
-        self.sig_g_2D = 1 + (self.A_gas - 1) * np.exp(- self.Y**2 / ((2 * (self.r * self.sigma_y))**2)[:, None])
+        self.sig_g_2D = 1 + (self.A_gas - 1) * np.exp(- self.Y**2 / (2 * (self.r * self.sigma_y)**2)[:, None])
         self.sig_g_2D *= (self.sig_g / self.sig_g_2D.mean(-1))[:, None]
 
         # #### DUST SIZE DISTRIBUTION
