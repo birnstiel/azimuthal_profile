@@ -308,6 +308,81 @@ def size_distribution_recipe(a_grid, sig_g=20., sig_d=0.2, alpha=1e-4, T=50., v_
         print('ERROR: the output specification needs to be \'sig\' or \'N\'')
 
 
+def get_powerlaw_dust_distribution(sigma_d, a_max, q=3.5, na=10, a0=None, a1=None):
+    """
+    Makes a power-law size distribution up to a_max, normalized to the given surface density.
+
+    Arguments:
+    ----------
+
+    sigma_d : array
+        dust surface density array
+
+    a_max : array
+        maximum particle size array
+
+    Keywords:
+    ---------
+
+    q : float
+        particle size index, n(a) propto a**-q
+
+    na : int
+        number of particle size bins
+
+    a0 : float
+        minimum particle size
+
+    a1 : float
+        maximum particle size
+
+    Returns:
+    --------
+
+    a : array
+        particle size grid (centers)
+
+    a_i : array
+        particle size grid (interfaces)
+
+    sig_da : array
+        particle size distribution of size (len(sigma_d), na)
+    """
+
+    if a0 is None:
+        a0 = a_max.min()
+
+    if a1 is None:
+        a1 = 2 * a_max.max()
+
+    nr = len(sigma_d)
+    sig_da = np.zeros([nr, na]) + 1e-100
+
+    a_i = np.logspace(np.log10(a0), np.log10(a1), na + 1)
+    a = 0.5 * (a_i[1:] + a_i[:-1])
+
+    for ir in range(nr):
+
+        if a_max[ir] <= a0:
+            sig_da[ir, 0] = 1
+        else:
+            i_up = np.where(a_i < a_max[ir])[0][-1]
+
+            # filling all bins that are strictly below a_max
+
+            for ia in range(i_up):
+                sig_da[ir, ia] = a_i[ia + 1]**(4 - q) - a_i[ia]**(4 - q)
+
+            # filling the bin that contains a_max
+            sig_da[ir, i_up] = a_max[ir]**(4 - q) - a_i[i_up]**(4 - q)
+
+        # normalize
+
+        sig_da[ir, :] = sig_da[ir, :] / sig_da[ir, :].sum() * sigma_d[ir]
+
+    return a, a_i, sig_da
+
+
 def planck_B_nu(freq, T):
     """
     Calculates the value of the Planck-Spectrum

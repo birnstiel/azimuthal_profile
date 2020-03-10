@@ -4,6 +4,7 @@ from .azimuthal_functions import \
     solve_drift_diffusion_analytical, \
     progress_bar, \
     size_distribution_recipe, \
+    get_powerlaw_dust_distribution, \
     planck_B_nu, \
     Capturing, \
     is_interactive
@@ -16,6 +17,7 @@ __all__ = [
     'solve_drift_diffusion_analytical',
     'progress_bar',
     'size_distribution_recipe',
+    'get_powerlaw_dust_distribution',
     'planck_B_nu',
     'Capturing',
     'is_interactive',
