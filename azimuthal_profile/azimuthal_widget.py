@@ -385,6 +385,12 @@ class Widget():
         St = self.lam_obs[0] * self.rho_s / (4. * self.sig_g)  # the "observed stokes number"
 
         if self.fwhm:
+
+            fname = pkg_resources.resource_filename(__name__, os.path.join('data', 'data_fwhm.txt'))
+            stokes, err_st_low, err_st_up, F_d, err_F_d = np.loadtxt(fname, skiprows=1, usecols=(1, 2, 3, 4, 5)).T
+            err_st = np.array((err_st_low, err_st_up))
+            self.ax3.errorbar(stokes, F_d, yerr=err_F_d, xerr=err_st, fmt='.', lw=0.5)
+
             self.lines_3 = self.ax3.loglog(St, self.I_nu[0, :, :].max(-1) / self.I_nu[0, :, :].min(-1))
             self.lines_3 += [self.ax3.axvline(St[self.ir], c='k', ls='--', lw=1)]
 
@@ -394,8 +400,9 @@ class Widget():
             self.ax3.set_ylim(2e1, 4e3)
 
         else:
+            fname = pkg_resources.resource_filename(__name__, os.path.join('data', 'data.txt'))
             stokes, err_st_low, err_st_up, A_d, err_A_d = np.loadtxt(
-                pkg_resources.resource_filename(__name__, os.path.join('data', 'data.txt')),
+                fname,
                 skiprows=1, usecols=(1, 2, 3, 4, 5)).T
 
             err_st = np.array((err_st_low, err_st_up))
