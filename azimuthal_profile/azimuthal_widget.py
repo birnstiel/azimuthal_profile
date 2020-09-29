@@ -32,31 +32,31 @@ class Widget():
 
     # Set up model parameters of a radial gas profile
 
-    na          = 100
-    nr          = 40
-    ny          = 400
-    rho_s       = 1.67  # dust material density [g/cm^3]
-    A_gas       = 1.2     # gas density contrast (peak-to-valley)
-    d2g         = 0.01
-    alpha       = 1e-3
-    v_frag      = 1000
-    sig0        = 100.
-    M_star      = c.M_sun.cgs.value
+    na = 100
+    nr = 40
+    ny = 400
+    rho_s = 1.67  # dust material density [g/cm^3]
+    A_gas = 1.2     # gas density contrast (peak-to-valley)
+    d2g = 0.01
+    alpha = 1e-3
+    v_frag = 1000
+    sig0 = 100.
+    M_star = c.M_sun.cgs.value
     sigma_y_deg = 10.     # azimuthal bump extent in degree
-    sigma_y     = sigma_y_deg / 180 * np.pi
-    r           = np.logspace(-1, 2, nr) * au  # radial grid
-    y           = np.linspace(- np.pi, np.pi, ny)
-    Y           = r[:, None] * y  # azimuth grid
-    sig_g       = sig0 / (r / r[0])                     # avg. gas surface density
-    sig_d       = d2g * sig_g
+    sigma_y = sigma_y_deg / 180 * np.pi
+    r = np.logspace(-1, 2, nr) * au  # radial grid
+    y = np.linspace(- np.pi, np.pi, ny)
+    Y = r[:, None] * y  # azimuth grid
+    sig_g = sig0 / (r / r[0])                     # avg. gas surface density
+    sig_d = d2g * sig_g
 
     # maximum particle size, which can be
     # float: same maximum particle size everywhere
     # array: different particle size at every radius
     # None: will construct fragmentation/coagulation size distribution
 
-    a0   = 0.1
-    pa    = 0
+    a0 = 0.1
+    pa = 0
     a_max = a0 * (r / r[0])**pa
 
     # Nienke: temperature has minor influence, so changes due to changes
@@ -72,8 +72,8 @@ class Widget():
     sizes = [1e-4, 1e-2, 1e-1, 1e0]
     i_sizes = []
 
-    def __init__(self, lam_obs=np.array([0.13, 0.9])):
-
+    def __init__(self, fwhm=False, lam_obs=np.array([0.13, 0.9])):
+        self.fwhm = fwhm
         # figure setup
 
         self.width = 10
@@ -94,12 +94,12 @@ class Widget():
 
         self.lam_obs = lam_obs
         self.n_lam = len(lam_obs)
-        self.nu_obs  = c_light / lam_obs
+        self.nu_obs = c_light / lam_obs
 
         with np.load(op.get_datafile('ricci_compact.npz')) as fid:
-            a_opac   = fid['a']
+            a_opac = fid['a']
             lam_opac = fid['lam']
-            k_abs    = fid['k_abs']
+            k_abs = fid['k_abs']
             # k_sca    = fid['k_sca']
             # g        = fid['g']
             # rho_s    = fid['rho_s']
@@ -120,8 +120,8 @@ class Widget():
 
         slider_x0 = self.ax0.get_position().x0
         slider_y0 = 0.05
-        slider_w  = self.ax0.get_position().width
-        slider_h  = 0.04
+        slider_w = self.ax0.get_position().width
+        slider_h = 0.04
 
         # radius slider
 
@@ -219,7 +219,7 @@ class Widget():
         self.sig_d = self.sig_g * self.d2g
 
         self.sigma_y_deg = self._slider_sigydeg.val
-        self.sigma_y     = self.sigma_y_deg / 180 * np.pi
+        self.sigma_y = self.sigma_y_deg / 180 * np.pi
 
         self.calculate_distri()
         self.calculate_intensity()
@@ -293,7 +293,7 @@ class Widget():
             self.v_frag,
             self.rho_s,
             self.M_star,
-            )
+        )
 
         if self.a_max is None:
             self.distri = self.sig_d_2D.mean(1).T
@@ -369,27 +369,68 @@ class Widget():
         "Contrast curve"
         St = self.lam_obs[0] * self.rho_s / (4. * self.sig_g)  # the "observed stokes number"
 
-        stokes, err_st_low, err_st_up, A_d, err_A_d = np.loadtxt(
-            pkg_resources.resource_filename(__name__, os.path.join('data', 'data.txt')),
-            skiprows=1, usecols=(1, 2, 3, 4, 5)).T
+        if self.fwhm:
+            self.lines_3 = self.ax3.loglog(St, self.I_nu[0, :, :].max(-1) / self.I_nu[0, :, :].min(-1))
+            self.lines_3 += [self.ax3.axvline(St[self.ir], c='k', ls='--', lw=1)]
 
-        err_st = np.array((err_st_low, err_st_up))
-        # self.ax3.scatter(stokes, A_d, color='r')
-        self.ax3.errorbar(stokes, A_d, yerr=err_A_d, xerr=err_st, fmt='.', lw=0.5)
+            self.ax3.set_xlabel('obs. Stokes number')
+            self.ax3.set_ylabel('FWHM')
+            self.ax3.set_xlim(sorted(self.ax3.get_xlim()))
+            self.ax3.set_ylim(2e1, 4e3)
 
-        self.lines_3 = self.ax3.loglog(St, self.I_nu[0, :, :].max(-1) / self.I_nu[0, :, :].min(-1))
-        self.lines_3 += [self.ax3.axvline(St[self.ir], c='k', ls='--', lw=1)]
+        else:
+            stokes, err_st_low, err_st_up, A_d, err_A_d = np.loadtxt(
+                pkg_resources.resource_filename(__name__, os.path.join('data', 'data.txt')),
+                skiprows=1, usecols=(1, 2, 3, 4, 5)).T
 
-        self.ax3.set_xlabel('obs. Stokes number')
-        self.ax3.set_ylabel('Intensity contrast')
-        self.ax3.set_xlim(sorted(self.ax3.get_xlim()))
-        self.ax3.set_ylim(1e0, 1e3)
+            err_st = np.array((err_st_low, err_st_up))
+            # self.ax3.scatter(stokes, A_d, color='r')
+            self.ax3.errorbar(stokes, A_d, yerr=err_A_d, xerr=err_st, fmt='.', lw=0.5)
+
+            self.lines_3 = self.ax3.loglog(St, self.I_nu[0, :, :].max(-1) / self.I_nu[0, :, :].min(-1))
+            self.lines_3 += [self.ax3.axvline(St[self.ir], c='k', ls='--', lw=1)]
+
+            self.ax3.set_xlabel('obs. Stokes number')
+            self.ax3.set_ylabel('Intensity contrast')
+            self.ax3.set_xlim(sorted(self.ax3.get_xlim()))
+            self.ax3.set_ylim(1e0, 1e3)
 
     def update_plot3(self):
         St = self.lam_obs[0] * self.rho_s / (4. * self.sig_g)  # the "observed stokes number"
+        if self.fwhm:
 
-        self.lines_3[0].set_data(St, self.I_nu[0, :, :].max(-1) / self.I_nu[0, :, :].min(-1))
-        self.lines_3[1].set_xdata([St[self.ir], St[self.ir]])
+            fwhmprofile = []
+            ilam = 0
+
+            for ir in range(self.nr):
+                I_profile = self.I_nu[ilam, ir, :]
+                I_max = np.max(I_profile)
+                I_min = np.min(I_profile)
+                if(I_max < 2 * I_min):
+                    F = 2 * np.pi
+                else:
+                    i_max = I_profile.argmax()
+
+                    I_left = np.roll(I_profile, i_max + 1)[0:self.ny // 2 + 1]
+                    y_left = np.roll(self.y, i_max + 1)[0:self.ny // 2 + 1]
+                    y_left = (y_left - y_left[0] + 2 * np.pi) % (2 * np.pi)
+
+                    I_right = np.roll(I_profile, i_max)[-self.ny // 2:][::-1]
+                    y_right = -np.roll(self.y, i_max)[-self.ny // 2:][::-1]
+                    y_right = ((y_right - y_right[0] + 2 * np.pi) % (2 * np.pi))
+
+                    F_left = np.interp(I_max / 2, I_left[::-1], y_left[::-1])
+                    F_right = np.interp(I_max / 2, I_right[::-1], y_right[::-1])
+
+                    F = abs(F_left) + abs(F_right)
+
+                fwhmprofile += [F * 180 / np.pi]
+
+            self.lines_3[0].set_data(St, fwhmprofile)
+            self.lines_3[1].set_xdata([St[self.ir], St[self.ir]])
+        else:
+            self.lines_3[0].set_data(St, self.I_nu[0, :, :].max(-1) / self.I_nu[0, :, :].min(-1))
+            self.lines_3[1].set_xdata([St[self.ir], St[self.ir]])
 
     def init_plot4(self):
         "plot the averaged particle size distribution"
@@ -444,11 +485,17 @@ class Widget():
                 self.I_nu[0, ...].max(-1) / self.I_nu[0, ...].min(-1),
                 self.I_nu[1, ...].max(-1) / self.I_nu[1, ...].min(-1),
                 self.a_max
-                )).T, delimiter='\t', fmt='%2.2e')
+            )).T, delimiter='\t', fmt='%2.2e')
 
 
 def main():
-    _ = Widget()
+    import sys
+    if 'fwhm' in sys.argv:
+        fwhm = True
+    else:
+        fwhm = False
+
+    _ = Widget(fwhm=fwhm)
     plt.show()
 
 
