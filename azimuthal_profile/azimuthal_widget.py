@@ -47,7 +47,7 @@ class Widget():
     r = np.logspace(-1, 2, nr) * au  # radial grid
     y = np.linspace(- np.pi, np.pi, ny)
     Y = r[:, None] * y  # azimuth grid
-    sig_g = sig0 / (r / r[0])                     # avg. gas surface density
+    sig_g = sig0 / (r / r[0])                     # azimuthally avg. gas surface density
     sig_d = d2g * sig_g
 
     # maximum particle size, which can be
@@ -61,7 +61,7 @@ class Widget():
 
     # Nienke: temperature has minor influence, so changes due to changes
     # in R is primarily due to sigma_gas, which is scaled with R => change sig_c
-    T = 500 * np.ones(nr)
+    T = 50 * np.ones(nr)
 
     # initial slider position
 
@@ -72,8 +72,13 @@ class Widget():
     sizes = [1e-4, 1e-2, 1e-1, 1e0]
     i_sizes = []
 
-    def __init__(self, fwhm=False, lam_obs=np.array([0.13, 0.9])):
+    def __init__(self, fwhm=False, radial_bump=False, lam_obs=np.array([0.13, 0.9])):
         self.fwhm = fwhm
+        self.radial_bump = radial_bump
+        self.A_r = 1.2           # radial gas density contrast
+        self.r_bump = 20 * au    # position of the bump
+        self.sigma_r = 5. * au  # radial bump extent in cm
+
         # figure setup
 
         self.width = 10
@@ -215,6 +220,9 @@ class Widget():
         self.sig0 = 10.**(self._slider_sigma.val)
         self.sig_g = self.sig0 / (self.r / self.r[0])
 
+        if self.radial_bump:
+            self.sig_g = self.sig_g * (1 + self.A_gas * np.exp(-(self.r - self.r_bump)**2 / (2 * self.sigma_r**2)))
+
         self.d2g = 10.**(self._slider_d2g.val)
         self.sig_d = self.sig_g * self.d2g
 
@@ -257,6 +265,12 @@ class Widget():
         # #### GAS AZIMUTHAL PROFILE
 
         self.sig_g_2D = 1 + (self.A_gas - 1) * np.exp(- self.Y**2 / (2 * (self.r * self.sigma_y)**2)[:, None])
+        if self.radial_bump:
+            self.sig_g_2D = 1 + (
+                self.A_gas *
+                (np.exp(-(self.r - self.r_bump)**2 / (2 * self.sigma_r**2)))[:, None] *
+                np.exp(- self.Y**2 / (2 * (self.r * self.sigma_y)**2)[:, None])
+            )
         self.sig_g_2D *= (self.sig_g / self.sig_g_2D.mean(-1))[:, None]
 
         # #### DUST SIZE DISTRIBUTION
@@ -310,6 +324,7 @@ class Widget():
             self.lines_0 += self.ax0.semilogy(self.y / np.pi * 180, self.sig_d_2D[ir, :, ia], '-', label=f'{self.A[ia]:.1g} cm')
 
         self.ax0.set_xlim(-45, 45)
+        self.ax0.set_ylim(self.sig_g.min() / 1e5, self.sig_g.max() * 1.5 / 100)
         self.ax0.set_xlabel('azimuth [degree]')
         self.ax0.set_ylabel(r'$\Sigma_\mathrm{d}$ [g cm$^{-2}$]')
         self.ax0.legend(fontsize='small', loc=1)
@@ -467,7 +482,7 @@ class Widget():
         self.ax5.set_xscale('log')
         self.ax5.set_title('intensity profile')
         self.ax5.set_xlabel('$r$ [au]')
-        self.ax5.set_ylabel('paraticle size [cm]')
+        self.ax5.set_ylabel('y [degree]')
 
     def update_plot5(self, distri_update=False):
         if distri_update:
@@ -499,12 +514,9 @@ class Widget():
 
 def main():
     import sys
-    if 'fwhm' in sys.argv:
-        fwhm = True
-    else:
-        fwhm = False
-
-    _ = Widget(fwhm=fwhm)
+    _ = Widget(
+        fwhm='fwhm' in sys.argv,
+        radial_bump='bump' in sys.argv)
     plt.show()
 
 
