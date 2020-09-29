@@ -23,11 +23,11 @@ if __name__ == "__main__":
         license='GPLv3',
         packages=[PACKAGENAME],
         package_dir={PACKAGENAME: PACKAGENAME},
-        package_data={PACKAGENAME: ['data/data.txt']},
+        package_data={PACKAGENAME: ['data/data*']},
         install_requires=[
             'numpy',
             'matplotlib',
             'astropy'],
         zip_safe=False,
-        entry_points = {'console_scripts': ['azimuthal_widget=azimuthal_profile.azimuthal_widget:main']}
-        )
+        entry_points={'console_scripts': ['azimuthal_widget=azimuthal_profile.azimuthal_widget:main']}
+    )

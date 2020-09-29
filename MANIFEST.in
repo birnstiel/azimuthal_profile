@@ -1,4 +1,4 @@
 include README.md
 include LICENSE
 include notebooks/*.ipynb
-include azimuthal_profile/data/data.txt
+include azimuthal_profile/data/data*
