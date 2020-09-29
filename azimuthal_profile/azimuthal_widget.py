@@ -394,13 +394,15 @@ class Widget():
             self.ax3.set_ylabel('Intensity contrast')
             self.ax3.set_xlim(sorted(self.ax3.get_xlim()))
             self.ax3.set_ylim(1e0, 1e3)
+        self.update_plot3()
 
     def update_plot3(self):
-        St = self.lam_obs[0] * self.rho_s / (4. * self.sig_g)  # the "observed stokes number"
+        ilam = 0
+
+        St = self.lam_obs[ilam] * self.rho_s / (4. * self.sig_g)  # the "observed stokes number"
         if self.fwhm:
 
             fwhmprofile = []
-            ilam = 0
 
             for ir in range(self.nr):
                 I_profile = self.I_nu[ilam, ir, :]
