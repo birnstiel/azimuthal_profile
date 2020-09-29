@@ -158,7 +158,7 @@ class Widget():
         # a0 slider
 
         self._ax_a0 = self.fig.add_axes([slider_x0, slider_y0 + slider_h, slider_w, slider_h], facecolor="lightgoldenrodyellow")
-        self._slider_a0 = Slider(self._ax_a0, "$a_0$", -4, 1, valinit=self.a0, valfmt='$10^{%.1f} cm$')
+        self._slider_a0 = Slider(self._ax_a0, "$a_0$", -4, 1, valinit=np.log10(self.a0), valfmt='$10^{%.1f} cm$')
         self._slider_a0.on_changed(self.update_all)
 
         # pa slider
