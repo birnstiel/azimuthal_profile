@@ -411,6 +411,9 @@ class Widget():
                 if(I_max < 2 * I_min):
                     F = 2 * np.pi
                 else:
+
+                    # we separate the left and right wing, both starting at the
+                    # maximum to the left, decreasing to the right
                     i_max = I_profile.argmax()
 
                     I_left = np.roll(I_profile, i_max + 1)[0:self.ny // 2 + 1]
@@ -420,6 +423,10 @@ class Widget():
                     I_right = np.roll(I_profile, i_max)[-self.ny // 2:][::-1]
                     y_right = -np.roll(self.y, i_max)[-self.ny // 2:][::-1]
                     y_right = ((y_right - y_right[0] + 2 * np.pi) % (2 * np.pi))
+
+                    # we interpolate to get the half-width half maximum for each side
+                    # here we need to invert the arrays such that the Intensity is
+                    # an increasing x-array and we can interpolate for the y.
 
                     F_left = np.interp(I_max / 2, I_left[::-1], y_left[::-1])
                     F_right = np.interp(I_max / 2, I_right[::-1], y_right[::-1])
