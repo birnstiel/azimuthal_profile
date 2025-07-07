@@ -12,7 +12,7 @@ import astropy.constants as c
 import astropy.units as u
 
 from scipy.constants import golden as gr
-from scipy.interpolate import interp2d
+from scipy.interpolate import RegularGridInterpolator
 
 import matplotlib
 import matplotlib.gridspec as gridspec
@@ -109,7 +109,9 @@ class Widget():
             # g        = fid['g']
             # rho_s    = fid['rho_s']
 
-        self.f_kappa = interp2d(np.log10(lam_opac), np.log10(a_opac), np.log10(k_abs))
+        self.f_kappa = RegularGridInterpolator(
+            (np.log10(a_opac), np.log10(lam_opac)), np.log10(k_abs),
+            method='linear', bounds_error=False, fill_value=None)
 
         # calculations and plot initialization
 
@@ -497,7 +499,9 @@ class Widget():
         self.lines_5.set_xdata([self.r[self.ir] / au, self.r[self.ir] / au])
 
     def calculate_intensity(self):
-        self.k_a = 10.**self.f_kappa(np.log10(self.lam_obs), np.log10(self.A))
+        Xnew, Ynew = np.meshgrid(np.log10(self.lam_obs), np.log10(self.A))
+        points = np.array([Ynew.ravel(), Xnew.ravel()]).T  # (N, 2) shape
+        self.k_a = 10.**self.f_kappa(points).reshape(Ynew.shape)
 
         # B_nu has shape (n_wavelength, n_radii)
         # tau and I_nu should have shape (n_wavelength, n_radii, n_azimuth)
